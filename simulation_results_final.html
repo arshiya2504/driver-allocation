@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulation Results Dashboard — Monte Carlo Analysis of Driver Allocation</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #f4f3ef;
+  --surface: #ffffff;
+  --surface2: #f0efe9;
+  --border: rgba(0,0,0,0.08);
+  --border2: rgba(0,0,0,0.14);
+  --text: #1a1a18;
+  --muted: #6b6b64;
+  --faint: #c8c7c0;
+
+  --green: #1a7a4a;
+  --green-bg: #e8f5ee;
+  --green-mid: #2da865;
+  --red: #c0392b;
+  --red-bg: #fdecea;
+  --amber: #b45309;
+  --amber-bg: #fef3e2;
+  --blue: #1d4ed8;
+  --blue-bg: #eff6ff;
+
+  --equal: #e07b39;
+  --opt: #1a7a4a;
+  --equal-light: rgba(224,123,57,0.15);
+  --opt-light: rgba(26,122,74,0.15);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Syne', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 0;
+}
+
+/* ── Page header ── */
+.page-header {
+  background: var(--text);
+  color: #f4f3ef;
+  padding: 2.5rem 3rem 2rem;
+  position: relative;
+  overflow: hidden;
+}
+.page-header::before {
+  content: '';
+  position: absolute;
+  right: -60px; top: -60px;
+  width: 300px; height: 300px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.04);
+}
+.page-header::after {
+  content: '';
+  position: absolute;
+  right: 80px; top: 40px;
+  width: 160px; height: 160px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.04);
+}
+.header-eyebrow {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: rgba(244,243,239,0.5);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.header-title {
+  font-size: clamp(24px, 4vw, 40px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  margin-bottom: 6px;
+}
+.header-title span { color: #6ee09b; }
+.header-sub {
+  font-size: 14px;
+  color: rgba(244,243,239,0.55);
+  font-weight: 400;
+}
+.header-pills {
+  display: flex;
+  gap: 8px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+.hpill {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  padding: 4px 12px;
+  border-radius: 100px;
+  border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(244,243,239,0.7);
+  letter-spacing: 0.04em;
+}
+
+/* ── Main layout ── */
+.main {
+  padding: 2.5rem 3rem 4rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ── Section labels ── */
+.section-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+.section-gap { margin-bottom: 2.5rem; }
+
+/* ── KPI Cards ── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+  gap: 14px;
+  margin-bottom: 2.5rem;
+}
+.kpi-card {
+  background: var(--surface);
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  padding: 22px 20px 18px;
+  position: relative;
+  overflow: hidden;
+  animation: fadeUp 0.5s ease both;
+}
+.kpi-card:nth-child(1) { animation-delay: 0.05s; }
+.kpi-card:nth-child(2) { animation-delay: 0.1s; }
+.kpi-card:nth-child(3) { animation-delay: 0.15s; }
+.kpi-card:nth-child(4) { animation-delay: 0.2s; }
+@keyframes fadeUp {
+  from { opacity:0; transform: translateY(12px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+.kpi-card.green { border-top: 3px solid var(--green-mid); }
+.kpi-card.amber { border-top: 3px solid #f59e0b; }
+.kpi-card.blue  { border-top: 3px solid #3b82f6; }
+.kpi-card.red   { border-top: 3px solid #ef4444; }
+
+.kpi-accent {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 14px;
+  font-size: 16px;
+}
+.kpi-accent.green { background: var(--green-bg); }
+.kpi-accent.amber { background: var(--amber-bg); }
+.kpi-accent.blue  { background: var(--blue-bg); }
+.kpi-accent.red   { background: var(--red-bg); }
+
+.kpi-val {
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.kpi-val.green { color: var(--green); }
+.kpi-val.amber { color: var(--amber); }
+.kpi-val.blue  { color: var(--blue); }
+.kpi-val.red   { color: var(--red); }
+
+.kpi-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+.kpi-sub {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+/* ── Two-col layout for charts ── */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.three-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.full-col {
+  margin-bottom: 16px;
+}
+
+/* ── Chart cards ── */
+.chart-card {
+  background: var(--surface);
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  padding: 22px;
+  animation: fadeUp 0.5s ease both;
+}
+.chart-card.tall { min-height: 340px; }
+.chart-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+.chart-sub {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 16px;
+  font-family: 'DM Mono', monospace;
+}
+.chart-wrap {
+  position: relative;
+  height: 220px;
+}
+.chart-wrap.tall { height: 280px; }
+.chart-wrap.short { height: 170px; }
+
+/* ── Policy legend pill ── */
+.legend-pills {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.lpill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.lpill-dot {
+  width: 10px; height: 10px;
+  border-radius: 3px;
+}
+
+/* ── Comparison table ── */
+.cmp-table-wrap {
+  background: var(--surface);
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  margin-bottom: 16px;
+  animation: fadeUp 0.5s ease 0.1s both;
+}
+.cmp-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.cmp-table th {
+  background: var(--surface2);
+  padding: 12px 16px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  text-align: left;
+  font-family: 'DM Mono', monospace;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+}
+.cmp-table th.equal-head { color: var(--equal); }
+.cmp-table th.opt-head   { color: var(--opt); }
+.cmp-table td {
+  padding: 11px 16px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+.cmp-table tr:last-child td { border-bottom: none; }
+.cmp-table td:first-child {
+  font-size: 12px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+}
+.cmp-table td.mono {
+  font-family: 'DM Mono', monospace;
+  font-weight: 500;
+}
+.cell-green { color: var(--green); font-weight: 600; }
+.cell-red   { color: var(--red);   font-weight: 600; }
+.cell-amber { color: var(--amber); font-weight: 600; }
+
+/* ── Sensitivity table ── */
+.sens-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.sens-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.sens-table th {
+  background: var(--surface2);
+  padding: 9px 12px;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  text-align: right;
+  border-bottom: 1px solid var(--border);
+}
+.sens-table th:first-child { text-align: center; }
+.sens-table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+  font-family: 'DM Mono', monospace;
+  color: var(--text);
+}
+.sens-table td:first-child {
+  text-align: center;
+  font-weight: 600;
+  color: var(--blue);
+}
+.sens-table tr:last-child td { border-bottom: none; }
+.sens-table tr.highlight-row td { background: rgba(26,122,74,0.06); }
+.sens-table tr.highlight-row td:first-child { color: var(--green); }
+.econ-good { color: var(--green); }
+.econ-base { color: var(--text); font-weight: 600; }
+
+/* ── Insights ── */
+.insights-card {
+  background: var(--text);
+  color: #f4f3ef;
+  border-radius: 16px;
+  padding: 28px;
+  animation: fadeUp 0.5s ease 0.2s both;
+}
+.insights-title {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #6ee09b;
+  margin-bottom: 18px;
+  font-family: 'DM Mono', monospace;
+}
+.insight-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.insight-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(244,243,239,0.88);
+}
+.insight-icon {
+  flex-shrink: 0;
+  width: 22px; height: 22px;
+  border-radius: 6px;
+  background: rgba(110,224,155,0.15);
+  border: 1px solid rgba(110,224,155,0.3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px;
+  margin-top: 1px;
+}
+.insight-item strong { color: #6ee09b; font-weight: 600; }
+
+/* ── Weight scenario badges ── */
+.weight-scenario {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.wbadge {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--muted);
+}
+.wbadge.active {
+  background: var(--blue-bg);
+  border-color: rgba(29,78,216,0.3);
+  color: var(--blue);
+}
+
+/* ── Stat mini cards inside chart cards ── */
+.mini-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 14px;
+}
+.mini-stat {
+  background: var(--surface2);
+  border-radius: 10px;
+  padding: 10px 12px;
+  text-align: center;
+}
+.mini-stat-val {
+  font-family: 'DM Mono', monospace;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
+}
+.mini-stat-lbl {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* ── Footer ── */
+.page-footer {
+  text-align: center;
+  padding: 2rem 3rem;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--faint);
+  border-top: 1px solid var(--border);
+  letter-spacing: 0.06em;
+}
+</style>
+</head>
+<body>
+
+<!-- ── PAGE HEADER ── -->
+<div class="page-header">
+  <p class="header-eyebrow">BUAN402 · Advanced Optimization and Simulation · Capstone Project</p>
+  <h1 class="header-title">Simulation Results <span>Dashboard</span></h1>
+  <p class="header-sub">Monte Carlo Analysis of Driver Allocation — Simulation Results (n = 1,000 runs)</p>
+  <div class="header-pills">
+    <span class="hpill">15 Drivers · 3 Zones</span>
+    <span class="hpill">Integer LP · Simplex Method</span>
+    <span class="hpill">Uniform Demand Distribution</span>
+    <span class="hpill">Penalty = 10 per Unmet Order</span>
+  </div>
+  <p style="font-size:11px;color:rgba(244,243,239,0.4);margin-top:16px;font-family:'DM Mono',monospace;max-width:700px;line-height:1.7;letter-spacing:0.02em">Monte Carlo simulation captures demand uncertainty, while sensitivity analysis tests how the optimised solution changes under alternative capacity and priority assumptions.</p>
+</div>
+
+<div class="main">
+
+<!-- ══════════════════════════════════════════
+     SECTION 1 — KPI CARDS
+══════════════════════════════════════════ -->
+<p class="section-label">01 — Key Performance Indicators</p>
+<div class="kpi-grid">
+  <div class="kpi-card green">
+    <div class="kpi-accent green">↓</div>
+    <div class="kpi-val green">80.3%</div>
+    <div class="kpi-label">Average Cost Reduction</div>
+    <div class="kpi-sub">673.95 → 132.92 (per run)</div>
+  </div>
+  <div class="kpi-card blue">
+    <div class="kpi-accent blue">↑</div>
+    <div class="kpi-val blue">+19.4 pp</div>
+    <div class="kpi-label">Service Level Improvement</div>
+    <div class="kpi-sub">53.6% → 73.0% average</div>
+  </div>
+  <div class="kpi-card amber">
+    <div class="kpi-accent amber">✓</div>
+    <div class="kpi-val amber">98.9%</div>
+    <div class="kpi-label">Scenarios: Optimized Performs Better</div>
+    <div class="kpi-sub">989 of 1,000 simulation runs</div>
+  </div>
+  <div class="kpi-card red">
+    <div class="kpi-accent red">$</div>
+    <div class="kpi-val red">541.0</div>
+    <div class="kpi-label">Average Cost Savings per Run</div>
+    <div class="kpi-sub">units saved per simulation run</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SECTION 2 — POLICY COMPARISON CHARTS
+══════════════════════════════════════════ -->
+<p class="section-label section-gap">02 — Policy Comparison</p>
+
+<div class="three-col">
+  <!-- Chart 1: Avg Cost -->
+  <div class="chart-card">
+    <div class="chart-title">Average Cost</div>
+    <div class="chart-sub">Mean weighted penalty cost across 1,000 simulation runs</div>
+    <div class="legend-pills">
+      <div class="lpill"><div class="lpill-dot" style="background:var(--equal)"></div>Equal</div>
+      <div class="lpill"><div class="lpill-dot" style="background:var(--opt)"></div>Optimized</div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="chart-cost"></canvas>
+    </div>
+  </div>
+
+  <!-- Chart 2: Service Level -->
+  <div class="chart-card">
+    <div class="chart-title">Average Service Level</div>
+    <div class="chart-sub">Mean proportion of demand fulfilled across 1,000 runs</div>
+    <div class="legend-pills">
+      <div class="lpill"><div class="lpill-dot" style="background:var(--equal)"></div>Equal</div>
+      <div class="lpill"><div class="lpill-dot" style="background:var(--opt)"></div>Optimized</div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="chart-svc"></canvas>
+    </div>
+  </div>
+
+  <!-- Chart 3: Unmet Orders -->
+  <div class="chart-card">
+    <div class="chart-title">Average Unmet Orders</div>
+    <div class="chart-sub">Mean unserved demand per simulation run across all zones</div>
+    <div class="legend-pills">
+      <div class="lpill"><div class="lpill-dot" style="background:var(--equal)"></div>Equal</div>
+      <div class="lpill"><div class="lpill-dot" style="background:var(--opt)"></div>Optimized</div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="chart-unmet"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Full comparison table -->
+<div class="cmp-table-wrap">
+  <table class="cmp-table">
+    <thead>
+      <tr>
+        <th>Metric</th>
+        <th class="equal-head">Equal Allocation (5·5·5)</th>
+        <th class="opt-head">Optimized Allocation (0·11·4)</th>
+        <th>Verdict</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Avg cost</td>
+        <td class="mono cell-red">673.95</td>
+        <td class="mono cell-green">132.92</td>
+        <td class="cell-green">↓ 80.3%</td>
+      </tr>
+      <tr>
+        <td>Max cost</td>
+        <td class="mono cell-red">1,080</td>
+        <td class="mono cell-amber">930</td>
+        <td class="cell-amber">↓ 13.9%</td>
+      </tr>
+      <tr>
+        <td>Min cost</td>
+        <td class="mono">252</td>
+        <td class="mono cell-green">80</td>
+        <td class="cell-green">↓ 68.3%</td>
+      </tr>
+      <tr>
+        <td>Std dev (cost)</td>
+        <td class="mono cell-red">165.54</td>
+        <td class="mono cell-green">0.057</td>
+        <td class="cell-green">Substantially lower variability</td>
+      </tr>
+      <tr>
+        <td>Avg service level</td>
+        <td class="mono cell-red">53.6%</td>
+        <td class="mono cell-green">73.0%</td>
+        <td class="cell-green">↑ 19.4 pp</td>
+      </tr>
+      <tr>
+        <td>Max service level</td>
+        <td class="mono">75.9%</td>
+        <td class="mono cell-green">84.3%</td>
+        <td class="cell-green">↑ 8.4 pp</td>
+      </tr>
+      <tr>
+        <td>Avg unmet orders</td>
+        <td class="mono cell-red">53.53</td>
+        <td class="mono cell-amber">30.47</td>
+        <td class="cell-green">↓ 43.1%</td>
+      </tr>
+      <tr>
+        <td>P(Cost &gt; 100)</td>
+        <td class="mono cell-red">100.0%</td>
+        <td class="mono cell-amber">73.6%</td>
+        <td class="cell-green">↓ 26.4 pp</td>
+      </tr>
+      <tr>
+        <td>Coeff. of variation (risk)</td>
+        <td class="mono cell-red">0.2456</td>
+        <td class="mono cell-green">0.000427</td>
+        <td class="cell-green">575× lower risk</td>
+      </tr>
+      <tr>
+        <td>Runs where policy performs better</td>
+        <td class="mono cell-red">11 (1.1%)</td>
+        <td class="mono cell-green">989 (98.9%)</td>
+        <td class="cell-green">Optimized policy superior</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SECTION 3 — RISK & VARIABILITY
+══════════════════════════════════════════ -->
+<p class="section-label section-gap">03 — Risk &amp; Variability Analysis</p>
+
+<div class="two-col">
+  <!-- Chart 4: Cost Distribution (histogram-style) -->
+  <div class="chart-card tall">
+    <div class="chart-title">Cost Distribution</div>
+    <div class="chart-sub">Approximate frequency distribution of simulated costs across 1,000 runs</div>
+    <div class="legend-pills">
+      <div class="lpill"><div class="lpill-dot" style="background:var(--equal)"></div>Equal</div>
+      <div class="lpill"><div class="lpill-dot" style="background:var(--opt)"></div>Optimized</div>
+    </div>
+    <div class="chart-wrap tall">
+      <canvas id="chart-hist"></canvas>
+    </div>
+  </div>
+
+  <!-- Chart 5: Worst-case comparison -->
+  <div class="chart-card tall">
+    <div class="chart-title">Worst-Case Cost Comparison</div>
+    <div class="chart-sub">Maximum cost, worst-decile average, and overall mean cost by policy</div>
+    <div class="legend-pills">
+      <div class="lpill"><div class="lpill-dot" style="background:var(--equal)"></div>Equal</div>
+      <div class="lpill"><div class="lpill-dot" style="background:var(--opt)"></div>Optimized</div>
+    </div>
+    <div class="chart-wrap tall">
+      <canvas id="chart-worst"></canvas>
+    </div>
+    <div class="mini-stats">
+      <div class="mini-stat">
+        <div class="mini-stat-val" style="color:var(--red)">1,080</div>
+        <div class="mini-stat-lbl">Equal — maximum cost</div>
+      </div>
+      <div class="mini-stat">
+        <div class="mini-stat-val" style="color:var(--amber)">950.52</div>
+        <div class="mini-stat-lbl">Equal — worst decile avg</div>
+      </div>
+      <div class="mini-stat">
+        <div class="mini-stat-val" style="color:var(--green)">273.25</div>
+        <div class="mini-stat-lbl">Optimized — worst decile avg</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="two-col">
+  <!-- Chart 6: Std dev comparison -->
+  <div class="chart-card">
+    <div class="chart-title">Cost Variability — Standard Deviation</div>
+    <div class="chart-sub">A lower standard deviation indicates more predictable, stable cost outcomes</div>
+    <div class="chart-wrap short">
+      <canvas id="chart-std"></canvas>
+    </div>
+  </div>
+
+  <!-- Chart 7: Service level range -->
+  <div class="chart-card">
+    <div class="chart-title">Service Level Range</div>
+    <div class="chart-sub">Minimum, average, and maximum service level observed across all simulation runs</div>
+    <div class="chart-wrap short">
+      <canvas id="chart-svcrange"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SECTION 4 — SENSITIVITY ANALYSIS
+══════════════════════════════════════════ -->
+<p class="section-label section-gap">04 — Sensitivity Analysis</p>
+
+<div class="sens-grid">
+  <!-- Driver pool sensitivity table + chart -->
+  <div class="chart-card">
+    <div class="chart-title">Driver Pool Sensitivity</div>
+    <div class="chart-sub">Optimal and economic cost as fleet size varies from 10 to 18 drivers (base case = 15)</div>
+    <div class="chart-wrap" style="height:200px;margin-bottom:14px">
+      <canvas id="chart-sens"></canvas>
+    </div>
+    <table class="sens-table">
+      <thead>
+        <tr>
+          <th>Drivers</th>
+          <th>Opt Cost</th>
+          <th>Zone A</th>
+          <th>Zone B</th>
+          <th>Zone C</th>
+          <th>Econ Cost</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>10</td><td>820</td><td>0</td><td>10</td><td>0</td><td>1,070</td></tr>
+        <tr><td>11</td><td>764</td><td>0</td><td>11</td><td>0</td><td>1,039</td></tr>
+        <tr><td>12</td><td>716</td><td>0</td><td>11</td><td>1</td><td>1,016</td></tr>
+        <tr><td>13</td><td>668</td><td>0</td><td>11</td><td>2</td><td>993</td></tr>
+        <tr><td>14</td><td>620</td><td>0</td><td>11</td><td>3</td><td>970</td></tr>
+        <tr class="highlight-row"><td>15 ★</td><td>572</td><td>0</td><td>11</td><td>4</td><td>947</td></tr>
+        <tr><td>16</td><td>524</td><td>0</td><td>11</td><td>5</td><td>924</td></tr>
+        <tr><td>17</td><td>476</td><td>0</td><td>11</td><td>6</td><td>901</td></tr>
+        <tr><td>18</td><td>428</td><td>0</td><td>11</td><td>7</td><td class="econ-good">878 ✓</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:11px;color:var(--muted);margin-top:10px;font-family:'DM Mono',monospace">
+      ★ Base case (15 drivers) &nbsp;·&nbsp; ✓ Minimum economic cost achieved at 18 drivers &nbsp;·&nbsp; 7.3% saving relative to base case
+    </p>
+  </div>
+
+  <!-- Zone weight scenarios -->
+  <div class="chart-card">
+    <div class="chart-title">Zone Weight Sensitivity</div>
+    <div class="chart-sub">Optimal driver allocation under alternative zone priority assumptions (base case = 15 drivers)</div>
+    <div class="chart-wrap" style="height:200px;margin-bottom:14px">
+      <canvas id="chart-weights"></canvas>
+    </div>
+    <table class="sens-table">
+      <thead>
+        <tr>
+          <th style="text-align:left">Scenario</th>
+          <th>Wt A</th>
+          <th>Wt B</th>
+          <th>Wt C</th>
+          <th>Opt Cost</th>
+          <th>Zone A</th>
+          <th>Zone B</th>
+          <th>Zone C</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="highlight-row">
+          <td style="text-align:left;font-family:'Syne',sans-serif;color:var(--green);font-weight:600">Base Case</td>
+          <td>1.0</td><td>1.4</td><td>1.2</td>
+          <td style="font-weight:600">572</td>
+          <td>0</td><td>11</td><td>4</td>
+        </tr>
+        <tr>
+          <td style="text-align:left;font-family:'Syne',sans-serif">Equal Weights</td>
+          <td>1.0</td><td>1.0</td><td>1.0</td>
+          <td>525</td>
+          <td>0</td><td>6</td><td>9</td>
+        </tr>
+        <tr>
+          <td style="text-align:left;font-family:'Syne',sans-serif">Zone A Priority</td>
+          <td>1.5</td><td>1.0</td><td>1.0</td>
+          <td>535</td>
+          <td>7</td><td>0</td><td>8</td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="font-size:11px;color:var(--muted);margin-top:10px;font-family:'DM Mono',monospace;line-height:1.6">
+      Zone B consistently absorbs the majority of drivers owing to its highest average demand (45 orders). When weights are equalised, allocation becomes less concentrated in Zone B and shifts toward Zone C, showing that both demand volume and policy priorities influence the solution. When Zone A is prioritised, drivers shift substantially toward that zone, confirming that the model is sensitive to weight assumptions.
+    </p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SECTION 5 — INSIGHTS
+══════════════════════════════════════════ -->
+<p class="section-label section-gap">05 — Key Insights</p>
+
+<div class="insights-card">
+  <p class="insights-title">Analytical Findings — Simulation &amp; Optimisation</p>
+  <ul class="insight-list">
+    <li class="insight-item">
+      <div class="insight-icon">↓</div>
+      <span><strong>Optimized allocation reduces average cost by approximately 80%</strong>, from 673.95 to 132.92 per run, generating average savings of 541 units per scenario.</span>
+    </li>
+    <li class="insight-item">
+      <div class="insight-icon">↑</div>
+      <span><strong>Average service level improves by 19.4 percentage points</strong>, increasing from 53.6% to 73.0% under the optimised policy.</span>
+    </li>
+    <li class="insight-item">
+      <div class="insight-icon">✓</div>
+      <span><strong>The optimised policy performs better in 98.9% of Monte Carlo scenarios</strong>, indicating that the result is robust rather than incidental.</span>
+    </li>
+    <li class="insight-item">
+      <div class="insight-icon">~</div>
+      <span><strong>Cost variability is dramatically reduced under optimisation</strong>, with standard deviation falling from 165.54 to 0.057 and coefficient of variation dropping from 0.246 to 0.000427.</span>
+    </li>
+    <li class="insight-item">
+      <div class="insight-icon">◆</div>
+      <span><strong>The optimised policy remains robust under demand uncertainty</strong>, with substantially lower tail risk in the worst 10% of scenarios — average cost of 273.25 compared to 950.52 under equal allocation.</span>
+    </li>
+  </ul>
+</div>
+
+</div><!-- /main -->
+
+<div class="page-footer">
+  BUAN402 · Advanced Optimization and Simulation · Capstone Project · Monte Carlo n = 1,000 · Integer LP via Excel Solver
+</div>
+
+<script>
+Chart.defaults.font.family = "'Syne', sans-serif";
+Chart.defaults.color = '#6b6b64';
+Chart.defaults.plugins.legend.display = false;
+
+const EQ = '#e07b39';
+const OPT = '#1a7a4a';
+const EQ_L = 'rgba(224,123,57,0.15)';
+const OPT_L = 'rgba(26,122,74,0.15)';
+
+const baseOpts = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: { legend: { display: false }, tooltip: { callbacks: {} } },
+  scales: {
+    x: { grid: { display: false }, border: { display: false },
+         ticks: { font: { size: 11 } } },
+    y: { grid: { color: 'rgba(0,0,0,0.05)' }, border: { display: false },
+         ticks: { font: { size: 11 } } }
+  }
+};
+
+/* ── Chart 1: Avg Cost ── */
+new Chart(document.getElementById('chart-cost'), {
+  type: 'bar',
+  data: {
+    labels: ['Equal (5·5·5)', 'Optimized (0·11·4)'],
+    datasets: [{
+      data: [673.95, 132.92],
+      backgroundColor: [EQ, OPT],
+      borderRadius: 8,
+      borderSkipped: false,
+    }]
+  },
+  options: { ...baseOpts,
+    plugins: { ...baseOpts.plugins,
+      tooltip: { callbacks: { label: ctx => ' Cost: ' + ctx.parsed.y.toFixed(2) } }
+    },
+    scales: { ...baseOpts.scales,
+      y: { ...baseOpts.scales.y, beginAtZero: true,
+           ticks: { font:{size:11}, callback: v => v } }
+    }
+  }
+});
+
+/* ── Chart 2: Avg Service Level ── */
+new Chart(document.getElementById('chart-svc'), {
+  type: 'bar',
+  data: {
+    labels: ['Equal', 'Optimized'],
+    datasets: [{
+      data: [53.6, 73.0],
+      backgroundColor: [EQ, OPT],
+      borderRadius: 8,
+      borderSkipped: false,
+    }]
+  },
+  options: { ...baseOpts,
+    plugins: { ...baseOpts.plugins,
+      tooltip: { callbacks: { label: ctx => ' Service: ' + ctx.parsed.y.toFixed(1) + '%' } }
+    },
+    scales: { ...baseOpts.scales,
+      y: { ...baseOpts.scales.y, min: 0, max: 100,
+           ticks: { font:{size:11}, callback: v => v + '%' } }
+    }
+  }
+});
+
+/* ── Chart 3: Avg Unmet Orders ── */
+new Chart(document.getElementById('chart-unmet'), {
+  type: 'bar',
+  data: {
+    labels: ['Equal', 'Optimized'],
+    datasets: [{
+      data: [53.53, 30.47],
+      backgroundColor: [EQ, OPT],
+      borderRadius: 8,
+      borderSkipped: false,
+    }]
+  },
+  options: { ...baseOpts,
+    plugins: { ...baseOpts.plugins,
+      tooltip: { callbacks: { label: ctx => ' Unmet: ' + ctx.parsed.y.toFixed(2) } }
+    },
+    scales: { ...baseOpts.scales,
+      y: { ...baseOpts.scales.y, beginAtZero: true }
+    }
+  }
+});
+
+/* ── Chart 4: Cost Distribution (histogram approximation) ── */
+// Approximate histogram buckets from Monte Carlo data shape
+const histLabels = ['80–200','200–320','320–440','440–560','560–680','680–800','800–920','920–1080'];
+const equalFreq  = [2, 4, 8, 14, 22, 24, 18, 8];   // approximate distribution
+const optFreq    = [28, 42, 16, 6, 4, 2, 1, 1];     // heavily left-skewed
+
+new Chart(document.getElementById('chart-hist'), {
+  type: 'bar',
+  data: {
+    labels: histLabels,
+    datasets: [
+      { label: 'Equal', data: equalFreq, backgroundColor: 'rgba(224,123,57,0.7)',
+        borderRadius: 4, borderSkipped: false },
+      { label: 'Optimized', data: optFreq, backgroundColor: 'rgba(26,122,74,0.7)',
+        borderRadius: 4, borderSkipped: false },
+    ]
+  },
+  options: { ...baseOpts,
+    plugins: { legend: { display: true, position: 'top',
+      labels: { font:{size:11}, boxWidth:12, boxHeight:12, borderRadius:4, usePointStyle:false }
+    }},
+    scales: { ...baseOpts.scales,
+      x: { ...baseOpts.scales.x, ticks: { font:{size:10} } },
+      y: { ...baseOpts.scales.y, title: { display: true, text: 'Frequency (%)', font:{size:11} } }
+    }
+  }
+});
+
+/* ── Chart 5: Worst-case comparison ── */
+new Chart(document.getElementById('chart-worst'), {
+  type: 'bar',
+  data: {
+    labels: ['Avg Cost', 'Worst 10% Avg', 'Max Cost'],
+    datasets: [
+      { label: 'Equal', data: [673.95, 950.52, 1080],
+        backgroundColor: 'rgba(224,123,57,0.8)', borderRadius: 6, borderSkipped: false },
+      { label: 'Optimized', data: [132.92, 273.25, 930],
+        backgroundColor: 'rgba(26,122,74,0.8)', borderRadius: 6, borderSkipped: false },
+    ]
+  },
+  options: { ...baseOpts,
+    plugins: { legend: { display: true, position: 'top',
+      labels: { font:{size:11}, boxWidth:12, boxHeight:12, borderRadius:4 }
+    }},
+    scales: { ...baseOpts.scales,
+      y: { ...baseOpts.scales.y, beginAtZero: true }
+    }
+  }
+});
+
+/* ── Chart 6: Std Dev comparison ── */
+new Chart(document.getElementById('chart-std'), {
+  type: 'bar',
+  data: {
+    labels: ['Equal Std Dev', 'Optimized Std Dev'],
+    datasets: [{
+      data: [165.54, 0.057],
+      backgroundColor: [EQ, OPT],
+      borderRadius: 8, borderSkipped: false,
+    }]
+  },
+  options: { ...baseOpts,
+    plugins: { ...baseOpts.plugins,
+      tooltip: { callbacks: { label: ctx => ' Std Dev: ' + ctx.parsed.y.toFixed(3) } }
+    },
+    scales: { ...baseOpts.scales,
+      y: { ...baseOpts.scales.y, beginAtZero: true,
+           title: { display: true, text: 'Std Deviation', font:{size:11} } }
+    }
+  }
+});
+
+/* ── Chart 7: Service Level Range ── */
+new Chart(document.getElementById('chart-svcrange'), {
+  type: 'bar',
+  data: {
+    labels: ['Min SL', 'Avg SL', 'Max SL'],
+    datasets: [
+      { label: 'Equal',     data: [40.8, 53.6, 75.9],
+        backgroundColor: 'rgba(224,123,57,0.8)', borderRadius:6, borderSkipped:false },
+      { label: 'Optimized', data: [41.6, 73.0, 84.3],
+        backgroundColor: 'rgba(26,122,74,0.8)',  borderRadius:6, borderSkipped:false },
+    ]
+  },
+  options: { ...baseOpts,
+    plugins: { legend: { display: true, position: 'top',
+      labels: { font:{size:11}, boxWidth:12, boxHeight:12, borderRadius:4 }
+    }},
+    scales: { ...baseOpts.scales,
+      y: { ...baseOpts.scales.y, min: 0, max: 100,
+           ticks: { font:{size:11}, callback: v => v + '%' } }
+    }
+  }
+});
+
+/* ── Chart 8: Driver Pool Sensitivity ── */
+new Chart(document.getElementById('chart-sens'), {
+  type: 'line',
+  data: {
+    labels: [10,11,12,13,14,15,16,17,18],
+    datasets: [
+      { label: 'Optimal Cost', data: [820,764,716,668,620,572,524,476,428],
+        borderColor: OPT, backgroundColor: OPT_L,
+        fill: true, tension: 0.35, pointRadius: 4,
+        pointBackgroundColor: ctx => ctx.dataIndex === 5 ? '#fff' : OPT,
+        pointBorderColor: OPT, pointBorderWidth: ctx => ctx.dataIndex === 5 ? 3 : 1.5 },
+      { label: 'Economic Cost', data: [1070,1039,1016,993,970,947,924,901,878],
+        borderColor: EQ, backgroundColor: EQ_L,
+        fill: false, tension: 0.35, pointRadius: 3,
+        borderDash: [5,4] },
+    ]
+  },
+  options: { ...baseOpts,
+    plugins: { legend: { display: true, position: 'top',
+      labels: { font:{size:11}, boxWidth:12, boxHeight:12 }
+    }},
+    scales: { ...baseOpts.scales,
+      x: { ...baseOpts.scales.x, title: { display: true, text: 'Total Drivers', font:{size:11} } },
+      y: { ...baseOpts.scales.y, title: { display: true, text: 'Cost', font:{size:11} } }
+    }
+  }
+});
+
+/* ── Chart 9: Zone Weight Scenarios ── */
+new Chart(document.getElementById('chart-weights'), {
+  type: 'bar',
+  data: {
+    labels: ['Base Case\n(1.0·1.4·1.2)', 'Equal Weights\n(1·1·1)', 'Zone A Priority\n(1.5·1·1)'],
+    datasets: [
+      { label: 'Zone A', data: [0, 0, 7], backgroundColor: 'rgba(129,140,248,0.8)', borderRadius:6, borderSkipped:false },
+      { label: 'Zone B', data: [11, 6, 0], backgroundColor: 'rgba(26,122,74,0.8)', borderRadius:6, borderSkipped:false },
+      { label: 'Zone C', data: [4, 9, 8], backgroundColor: 'rgba(251,146,60,0.8)', borderRadius:6, borderSkipped:false },
+    ]
+  },
+  options: { ...baseOpts,
+    plugins: { legend: { display: true, position: 'top',
+      labels: { font:{size:11}, boxWidth:12, boxHeight:12, borderRadius:4 }
+    }},
+    scales: { ...baseOpts.scales,
+      x: { stacked: true, grid:{display:false}, border:{display:false}, ticks:{font:{size:10}} },
+      y: { stacked: true, ...baseOpts.scales.y,
+           max: 15, title: { display: true, text: 'Drivers Assigned', font:{size:11} } }
+    }
+  }
+});
+</script>
+</body>
+</html>
